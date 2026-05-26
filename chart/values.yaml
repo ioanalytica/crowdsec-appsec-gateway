@@ -1,0 +1,73 @@
+---
+replicaCount: 3
+
+image:
+  repository: ghcr.io/ioanalytica/crowdsec-appsec-gateway
+  # Pinned via HelmRelease chart.spec.version; falls back to .Chart.AppVersion
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Environment for the gateway process
+env:
+  lapiUrl: http://crowdsec-service.crowdsec:8080
+  appsecUrl: http://crowdsec-appsec-service.crowdsec:7422
+  # CIDRs for which CrowdSec is skipped entirely (no LAPI / no AppSec call).
+  # Default is localhost + RKE2's stock pod/service CIDRs. Operators on
+  # other distributions, or with custom cluster-cidr / service-cidr, must
+  # override. Add internal management networks (VPN, bastions, …) here.
+  trustedCIDRs:
+    - 127.0.0.0/8
+    - 10.42.0.0/16    # RKE2 default cluster-cidr (pod network)
+    - 10.43.0.0/16    # RKE2 default service-cidr
+  timeoutSeconds: 3
+
+# Secret holding the CrowdSec bouncer API key. The key inside the secret
+# must be `CROWDSEC_BOUNCER_API_KEY`. Default matches the cs Helm chart's
+# convention.
+apiKeySecret:
+  name: crowdsec-bouncer-key
+  key: CROWDSEC_BOUNCER_API_KEY
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+# Spread across nodes for HA
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: crowdsec-appsec-gateway
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Optional ServiceMonitor for kube-prometheus-stack discovery
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  additionalLabels: {}

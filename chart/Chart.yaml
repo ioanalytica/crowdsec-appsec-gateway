@@ -1,0 +1,20 @@
+apiVersion: v2
+name: crowdsec-appsec-gateway
+description: |
+  Minimal HTTP forwardauth → CrowdSec LAPI decisions + AppSec WAF inspection.
+  Bridges the nginx-style `nginx.ingress.kubernetes.io/auth-url` annotation
+  (which expects a single forwardauth endpoint) into LAPI + AppSec calls.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: ioanalytica
+home: https://github.com/ioanalytica/crowdsec-appsec-gateway
+sources:
+  - https://github.com/ioanalytica/crowdsec-appsec-gateway
+keywords:
+  - crowdsec
+  - appsec
+  - waf
+  - forwardauth
+  - ingress
