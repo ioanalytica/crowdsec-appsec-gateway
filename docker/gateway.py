@@ -113,7 +113,11 @@ async def forward_auth(request: Request) -> Response:
     except httpx.RequestError:
         pass  # fail-open
 
-    # AppSec inspection. Body only present on methods that carry one.
+    # AppSec inspection — skipped entirely when APPSEC_URL is unset/empty
+    # (LAPI-only mode, e.g. when the AppSec engine is disabled cluster-wide).
+    if not APPSEC_URL:
+        return Response(status_code=200)
+    # Body only present on methods that carry one.
     body = (
         await request.body()
         if request.method.upper() in ("POST", "PUT", "PATCH")
